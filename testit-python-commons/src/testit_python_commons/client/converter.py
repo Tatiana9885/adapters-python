@@ -1,16 +1,20 @@
 import typing
 
 from testit_api_client.models import (
+    AttachmentPutModel,
     AttachmentPutModelAutoTestStepResultsModel,
     AutoTestPostModel,
     AutoTestPutModel,
     AutoTestResultsForTestRunModel,
+    AutotestsSelectModel,
+    AutotestFilterModel,
     AutoTestStepModel,
     AvailableTestResultOutcome,
     LinkPostModel,
     LinkPutModel,
     LinkType,
-    TestRunV2PostShortModel
+    TestRunV2PostShortModel,
+    WorkItemIdModel
 )
 
 from testit_python_commons.models.link import Link
@@ -22,11 +26,44 @@ from testit_python_commons.services.logger import adapter_logger
 class Converter:
     @classmethod
     @adapter_logger
-    def test_run_to_test_run_short_model(cls, project_id, name):
+    def test_run_to_test_run_short_model(
+            cls,
+            project_id: str,
+            name: str) -> TestRunV2PostShortModel:
         return TestRunV2PostShortModel(
-            project_id=project_id,
-            name=name
-        )
+            projectId=project_id,
+            name=name)
+
+    @classmethod
+    @adapter_logger
+    def autotest_to_autotest_filter_model(
+            cls,
+            project_id: str,
+            external_id: str) -> AutotestFilterModel:
+        return AutotestFilterModel(
+            projectIds=[project_id],
+            externalIds=[external_id])
+
+    @classmethod
+    @adapter_logger
+    def autotest_to_autotests_select_model(
+            cls,
+            project_id: str,
+            external_id: str) -> AutotestsSelectModel:
+        return AutotestsSelectModel(
+            filter=cls.autotest_to_autotest_filter_model(
+                project_id,
+                external_id))
+
+    @classmethod
+    @adapter_logger
+    def attachment_id_to_attachment_put_model(cls, attachment_id: str,) -> AttachmentPutModel:
+        return AttachmentPutModel(id=attachment_id)
+
+    @classmethod
+    @adapter_logger
+    def work_item_id_to_work_item_id_model_model(cls, work_item_id: str) -> WorkItemIdModel:
+        return WorkItemIdModel(id=work_item_id)
 
     @classmethod
     @adapter_logger
@@ -58,9 +95,9 @@ class Converter:
             test_result: TestResult,
             project_id: str):
         return AutoTestPostModel(
-            test_result.get_external_id(),
-            project_id,
-            test_result.get_autotest_name(),
+            externalId=test_result.get_external_id(),
+            projectId=project_id,
+            name=test_result.get_autotest_name(),
             steps=cls.step_results_to_autotest_steps_model(
                 test_result.get_step_results()),
             setup=cls.step_results_to_autotest_steps_model(
@@ -73,8 +110,7 @@ class Converter:
             description=test_result.get_description(),
             links=cls.links_to_links_post_model(test_result.get_links()),
             labels=test_result.get_labels(),
-            should_create_work_item=test_result.get_automatic_creation_test_cases()
-        )
+            shouldCreateWorkItem=test_result.get_automatic_creation_test_cases())
 
     @classmethod
     @adapter_logger
@@ -84,9 +120,9 @@ class Converter:
             project_id: str):
         if test_result.get_outcome() == 'Passed':
             return AutoTestPutModel(
-                test_result.get_external_id(),
-                project_id,
-                test_result.get_autotest_name(),
+                externalId=test_result.get_external_id(),
+                projectId=project_id,
+                name=test_result.get_autotest_name(),
                 steps=cls.step_results_to_autotest_steps_model(
                     test_result.get_step_results()),
                 setup=cls.step_results_to_autotest_steps_model(
@@ -98,13 +134,12 @@ class Converter:
                 title=test_result.get_title(),
                 description=test_result.get_description(),
                 links=cls.links_to_links_put_model(test_result.get_links()),
-                labels=test_result.get_labels()
-            )
+                labels=test_result.get_labels())
         else:
             return AutoTestPutModel(
-                test_result.get_external_id(),
-                project_id,
-                test_result.get_autotest_name(),
+                externalId=test_result.get_external_id(),
+                projectId=project_id,
+                name=test_result.get_autotest_name(),
                 steps=cls.step_results_to_autotest_steps_model(
                     test_result.get_step_results()),
                 setup=cls.step_results_to_autotest_steps_model(
@@ -116,8 +151,7 @@ class Converter:
                 title=test_result.get_title(),
                 description=test_result.get_description(),
                 links=cls.links_to_links_put_model(test_result.get_links()),
-                labels=test_result.get_labels()
-            )
+                labels=test_result.get_labels())
 
     @classmethod
     @adapter_logger
@@ -126,14 +160,14 @@ class Converter:
             test_result: TestResult,
             configuration_id: str):
         return AutoTestResultsForTestRunModel(
-            configuration_id,
-            test_result.get_external_id(),
-            AvailableTestResultOutcome(test_result.get_outcome()),
-            step_results=cls.step_results_to_attachment_put_model_autotest_step_results_model(
+            configurationId=configuration_id,
+            autoTestExternalId=test_result.get_external_id(),
+            outcome=AvailableTestResultOutcome(test_result.get_outcome()),
+            stepResults=cls.step_results_to_attachment_put_model_autotest_step_results_model(
                 test_result.get_step_results()),
-            setup_results=cls.step_results_to_attachment_put_model_autotest_step_results_model(
+            setupResults=cls.step_results_to_attachment_put_model_autotest_step_results_model(
                 test_result.get_setup_results()),
-            teardown_results=cls.step_results_to_attachment_put_model_autotest_step_results_model(
+            teardownResults=cls.step_results_to_attachment_put_model_autotest_step_results_model(
                 test_result.get_teardown_results()),
             traces=test_result.get_traces(),
             attachments=test_result.get_attachments(),
@@ -143,9 +177,8 @@ class Converter:
                 test_result.get_result_links()),
             duration=round(test_result.get_duration()),
             message=test_result.get_message(),
-            started_on=test_result.get_started_on(),
-            completed_on=test_result.get_completed_on()
-        )
+            startedOn=test_result.get_started_on(),
+            completedOn=test_result.get_completed_on())
 
     @staticmethod
     @adapter_logger
@@ -155,14 +188,12 @@ class Converter:
                 url=link.get_url(),
                 title=link.get_title(),
                 type=LinkType(link.get_link_type()),
-                description=link.get_description()
-            )
+                description=link.get_description())
         else:
             return LinkPostModel(
                 url=link.get_url(),
                 title=link.get_title(),
-                description=link.get_description()
-            )
+                description=link.get_description())
 
     @staticmethod
     @adapter_logger
@@ -172,14 +203,12 @@ class Converter:
                 url=link.get_url(),
                 title=link.get_title(),
                 type=LinkType(link.get_link_type()),
-                description=link.get_description()
-            )
+                description=link.get_description())
         else:
             return LinkPutModel(
                 url=link.get_url(),
                 title=link.get_title(),
-                description=link.get_description()
-            )
+                description=link.get_description())
 
     @classmethod
     @adapter_logger
@@ -188,8 +217,7 @@ class Converter:
 
         for link in links:
             post_model_links.append(
-                cls.link_to_link_post_model(link)
-            )
+                cls.link_to_link_post_model(link))
 
         return post_model_links
 
@@ -200,8 +228,7 @@ class Converter:
 
         for link in links:
             put_model_links.append(
-                cls.link_to_link_put_model(link)
-            )
+                cls.link_to_link_put_model(link))
 
         return put_model_links
 
@@ -216,8 +243,7 @@ class Converter:
                     title=step_result.get_title(),
                     description=step_result.get_description(),
                     steps=cls.step_results_to_autotest_steps_model(
-                        step_result.get_step_results()))
-            )
+                        step_result.get_step_results())))
 
         return autotest_model_steps
 
@@ -235,11 +261,9 @@ class Converter:
                     duration=step_result.get_duration(),
                     parameters=step_result.get_parameters(),
                     attachments=step_result.get_attachments(),
-                    started_on=step_result.get_started_on(),
-                    completed_on=step_result.get_completed_on(),
-                    step_results=cls.step_results_to_attachment_put_model_autotest_step_results_model(
-                        step_result.get_step_results())
-                )
-            )
+                    startedOn=step_result.get_started_on(),
+                    completedOn=step_result.get_completed_on(),
+                    stepResults=cls.step_results_to_attachment_put_model_autotest_step_results_model(
+                        step_result.get_step_results())))
 
         return autotest_model_step_results
